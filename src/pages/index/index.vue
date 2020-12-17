@@ -9,7 +9,7 @@
 				</text>
 			</text>
 		</view>
-		<view class="text-area-row" :style="{height:scrollerHeight,width:scrollerWidth}">
+		<view class="text-area-row" :style="{width:scrollerWidth}">
 			<view class="">
 				<view class="image-margin border-right-bottom" @tap="mycourse">
 					<image src="/static/picture/course_pic.png" mode="aspectFit" :style="{width:picwidth,height:picwidth}"></image>
@@ -32,6 +32,9 @@
 				</view>
 			</view>
 		</view>
+		<view>
+
+		</view>
 	</view>
 </template>
 
@@ -46,20 +49,21 @@
 				title: 'Hello',
 				height: 0,
 				picwidth: '58px',
-				scrollerHeight: ((1200 - 44 - 50) - 10) / 2 + 'rpx',
+				// scrollerHeight: ((uni.getSystemInfoSync().screenHeight /uni.getSystemInfoSync().screenWidth - 44 - 50) - 10) / 2 + 'rpx',
+				scrollerHeight:   (uni.getSystemInfoSync().screenHeight / uni.getSystemInfoSync().screenWidth)*750 /2+"rpx",
 				scrollerWidth: (750 - 10) + 'rpx',
 				daydayword: "今生最好不过你胖,我也爱!",
-				daydayauthor: ""
+				daydayauthor: "无名"
 			}
 		},
 		onLoad() {
-			uni.onWindowResize((res) => {
+		/*	uni.onWindowResize((res) => {
 				console.log('变化后的窗口宽度=' + res.size.windowWidth)
 				console.log('变化后的窗口高度=' + res.size.windowHeight)
 
 				this.scrollerHeight = ((res.size.windowWidth - 44 - 50) - 10) / 2 + 'rpx';
 				this.scrollerWidth = (res.size.windowHeight - 10) + 'rpx';
-			})
+			})*/
 			this.everydayword();
 		},
 		onShow() {
@@ -68,7 +72,8 @@
 		methods: {
 			everydayword: function() {
 				let config = {
-					url: "/everyday/oneword"
+					url: "/everyday/oneword",
+					noToken:true
 				}
 				http.Get(config, (res) => {
 					if (res.code == this.$HTTP.SUCCESS) {
@@ -152,11 +157,7 @@
 		color: #8f8f94;
 	}
 
-	@font-face {
-		font-family: "hwxk";
-		/* src: url("~@/static/font/hwxk.ttf"); */
-		src: url("http://localhost:8080/static/font/hwxk.ttf");
-	}
+
 
 	.image-margin {
 		padding: 15px;
@@ -199,7 +200,7 @@
 	.daydayword {
 		margin: 0 auto;
 		/* height: 443rpx; */
-		height: 443rpx;
+		height: 520rpx;
 		writing-mode: vertical-lr;
 		color: ivory;
 		font-size: 31px;

@@ -3,9 +3,15 @@ var serverInfo = {
 	baseUrl: "http://localhost:1354"
 };
 var DLStorage = {
+	//缓存key
+	keyDataSet:{
+		accessToken:"accessToken",
+		userInfo: "userInfo"
+	},
 	setCacheStorage: function(key, obj) {
 		var data = null;
-		if (typeof obj === Object) {
+		console.info("www",typeof obj)
+		if (typeof obj === "object") {
 			data = "obj-" + JSON.stringify(obj);
 		} else {
 			data = obj;
@@ -22,19 +28,17 @@ var DLStorage = {
 	},
 	getCacheStorage: function(key) {
 		var retData = null;
-		uni.getStorage({
-			key: key,
-			success: (res) => {
-				if (typeof res.data === "string" && res.data.indexOf("obj-") == 0) {
-					retData = JSON.parse(res.data.slice(4));
-				} else {
-					retData = res.data;
-				}
-			},
-			fail: () => {
-				Toast(key + "获取缓存数据失败");
+		try{
+			var res = uni.getStorageSync(key);
+			if (typeof res === "string" && res.indexOf("obj-") == 0) {
+				retData = JSON.parse(res.slice(4));
+			} else {
+				retData = res;
 			}
-		})
+		} catch (e) {
+		// error
+			console.error("获取缓存"+key+"失败",e)
+		}
 		return retData;
 	},
 	removeCacheStorage(key) {
@@ -46,10 +50,7 @@ var DLStorage = {
 		})
 	}
 };
-//缓存key
-var keyDataSet={
-	accessToken:"accessToken",
-}
+
 
 var Toast= function(titleText, iconVal = 'none', durationTimeVal = 2000) {
 	if (titleText && titleText.length < 1) return;
@@ -74,12 +75,15 @@ var http = {
 			}
 		}
 		// var isFillHeader=false;
-
-		var xAuthToken = DLStorage.getCacheStorage(keyDataSet.accessToken);
-		if (xAuthToken) {
-			headerCus["X-CURRENT-TOKEN"] = xAuthToken;
-			// isFillHeader=true;
+		// noToken = false 需要加token头
+		if(!obj.noToken){
+			var xAuthToken = DLStorage.getCacheStorage(DLStorage.keyDataSet.accessToken);
+			if (xAuthToken) {
+				headerCus["X-CURRENT-TOKEN"] = xAuthToken;
+				// isFillHeader=true;
+			}
 		}
+
 		// if(isFillHeader) 
 		config.header = headerCus;
 		return config;
@@ -122,6 +126,34 @@ var http = {
 
 			}
 		})
+	},
+	Post: function(configInf, processFunc) {
+		configInf.method = "POST";
+		var config = this.fillRequestData(configInf);
+		if (!config || !(typeof processFunc == "function")) return;
+		uni.request({
+			...config,
+			timeout: 30000,
+			success: function(res) {
+				if (res.statusCode != 200) {
+					Toast('网络错误，数据获取失败' + config['url']);
+					return;
+				} else {
+					if(res.code == HTTP.FAIL){
+						Toast(res.message);
+						return;
+					}
+					processFunc(res.data);
+				}
+				console.log("返回数据", res.data)
+			},
+			fail: (error) => {
+				uni.$emit("messagePrompEmit", "close", null);
+				console.log("requestStart error:", error, config['url']);
+				Toast('网络错误:' + config['url']);
+
+			}
+		})
 	}
 }
 var HTTP={
@@ -129,4 +161,4 @@ var HTTP={
 	FAIL:999
 }
 Vue.prototype.$HTTP = HTTP;
-export  {http,DLStorage};
+export  {http,DLStorage,Toast,serverInfo};
