@@ -36,7 +36,8 @@
       "path": "pages/grade/grade",
       "style": {
         "navigationBarTitleText": "我的班级",
-        "enablePullDownRefresh": true
+        "enablePullDownRefresh": true,
+        "navigationStyle":"default"
       }
     },{
       "path": "pages/login/login",
@@ -54,6 +55,17 @@
       "path": "pages/register/register",
       "style": {
         "navigationBarTitleText": "注册页面"
+      }
+    },
+    {
+      "path": "pages/course/addCourse/addCourse",
+      "style": {
+        "navigationBarTitleText": "添加课程"
+      }
+    },{
+      "path": "pages/course/teacherAddCourse/teacherAddCourse",
+      "style": {
+        "navigationBarTitleText": "添加课程"
       }
     }
   ],

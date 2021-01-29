@@ -209,7 +209,7 @@
     }
     @font-face {
         font-family: "success";
-        src: url('http://localhost:8080/static/font/success-font.ttf?t=1608088167797') /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
+        src: url('~@/static/font/success-font.ttf?t=1608088167797') /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
     }
     .qr_success_font{
         font-family: success !important;

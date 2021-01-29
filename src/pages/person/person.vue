@@ -50,12 +50,27 @@
                 <view>设置</view>
             </view>
         </view>
+        <pop ref="newpop" direction="center" :is_close="true" :is_mask="true" :mask_close="false" :width="100">
+            <view class="qr_pop">
+                <form @submit="addRole" >
+                    <view class="uni-inline-item qr-picker">
+                        <text class="qr-title">我是:</text>
+                        <picker @change="bindPickerChange" :value="index" :range="range" name="role">
+                            <view class="uni-input" style="background: #ca5555;color: lightgoldenrodyellow;">{{range[index]}}</view>
+                        </picker>
+                    </view>
+                    <view class="uni-btn-v">
+                        <button form-type="submit">添加</button>
+                    </view>
+                </form>
+            </view>
+        </pop>
 	</view>
 </template>
 
 <script>
     import {http,DLStorage,Toast} from "../../util/httpUtil";
-
+    import pop from "@/components/ming-pop/ming-pop.vue"
     export default {
 		data() {
 			return {
@@ -66,23 +81,74 @@
                     // "headPicture":"/static/logo.png"
                 },
                 userAuth:false,
-                defaultImage:"/static/logo.png"
+                defaultImage:"/static/logo.png",
+                noLoginMsg:"请先登录！再使用相应的权益",
+                range:["老师","学生"],
+                index:0,
+                roles:[],
 			}
 		},
 		onLoad(){
-		    this.getUserInfoStorage();
+		   let userInfo = this.getUserInfoStorage();
+               if(!userInfo){
+                   Toast(this.noLoginMsg)
+               }
 		    //监听登录成功弹窗
 		    uni.$on("doLogin",(data)=>{
 		       setTimeout(function () {
                    Toast(data);
                },500)
                 // console.log(data)
-            })
+            });
+            this.getRoleRange();
 		},
         onShow(){
            this.getUserInfo();
+            this.getRoleRange();
+        },
+        components:{
+            pop
         },
 		methods: {
+		    //微信小程序添加角色
+		    addRole:function(e){
+                //获取对应的角色代码
+                let roleCode = this.roles[this.index].roleCode
+                let config={
+                    url:"/user/addUserRole",
+                    data:{
+                        roleCode:roleCode
+                    },
+                    header:{
+                        "content-type":'application/x-www-form-urlencoded'
+                    }
+                }
+                http.Post(config,data=>{
+                    if(data.code == this.$HTTP.SUCCESS){
+                        this.$refs.newpop.close()
+                    }
+                })
+            },
+            getRoleRange:function(){
+                let config={
+                    url:"/role/roles",
+                    noToken: true
+                }
+                http.Get(config,(data)=>{
+                    if(data.code == this.$HTTP.SUCCESS){
+                        this.roles = data.data;
+                        this.range = [];
+                        for(var i=0;i<data.data.length;i++){
+                            this.range.push(data.data[i].roleName)
+                        }
+                    }
+                })
+            },
+            bindPickerChange: function(e) {
+                console.log('picker发送选择改变，携带值为', e.target.value)
+                this.index = e.target.value
+
+            },
             getPhonenumber:function(phone){
                 console.log("电话",phone)
             },
@@ -127,6 +193,11 @@
                         //保存userInfo
                         DLStorage.setCacheStorage(DLStorage.keyDataSet.userInfo,this.userInfo);
                         this.userAuth = true;
+                        //是新用户弹出角色框
+                        if(this.userInfo.isNew){
+                            this.$refs.newpop.show()
+                        }
+
                     }
                 })
             },
@@ -169,6 +240,7 @@
                 }
 		        //未登录也不去取用户信息
 		        if(!DLStorage.getCacheStorage(DLStorage.keyDataSet.accessToken)){
+		            Toast(this.noLoginMsg)
 		            return;
                 }
 		        //查询用户信息
@@ -251,5 +323,10 @@
         height: 58rpx;
         margin-left: 40rpx;
         margin-right: 20rpx;
+    }
+    .qr-picker{
+        display:flex;
+        justify-content: space-evenly;
+        margin-top: 20rpx;
     }
 </style>

@@ -52,7 +52,7 @@ var DLStorage = {
 };
 
 
-var Toast= function(titleText, iconVal = 'none', durationTimeVal = 2000) {
+var Toast= function(titleText, iconVal = 'none', durationTimeVal = 3000) {
 	if (titleText && titleText.length < 1) return;
 	uni.showToast({
 		title: titleText,
@@ -103,6 +103,10 @@ var http = {
 	Get: function(configInf, processFunc) {
 		var config = this.fillRequestData(configInf);
 		if (!config || !(typeof processFunc == "function")) return;
+		let self =this;
+		uni.showLoading({
+			title: '加载中'
+		});
 		uni.request({
 			...config,
 			timeout: 30000,
@@ -111,8 +115,28 @@ var http = {
 					Toast('网络错误，数据获取失败' + config['url']);
 					return;
 				} else {
-					if(res.code == HTTP.FAIL){
-						Toast(res.message);
+					if(res.data.code == HTTP.FAIL){
+						if(res.data.message){
+							Toast(res.data.message);
+						}else{
+							Toast("网络异常!");
+						}
+						return;
+					}else if(res.data.code == HTTP.Unauthorized){
+						// Toast(res.data.message);
+
+						let userInfo = DLStorage.getCacheStorage(DLStorage.keyDataSet.userInfo);
+						if(!userInfo){
+							uni.switchTab({
+								url: "/pages/person/person"
+							})
+						}else{
+							let userId = userInfo.userId;
+							//登录获取token
+							self.DoLogin(userId)
+							//再次访问相同api
+							self.Get(configInf,processFunc);
+						}
 						return;
 					}
 					processFunc(res.data);
@@ -124,13 +148,25 @@ var http = {
 				console.log("requestStart error:", error, config['url']);
 				Toast('网络错误:' + config['url']);
 
+			},complete:(complete)=>{
+				uni.hideLoading();
 			}
 		})
 	},
 	Post: function(configInf, processFunc) {
 		configInf.method = "POST";
+		//是表单提交
+		/*if(configInf.toForm){
+			if(config['header']){
+				config.header.content-type='application/x-www-form-urlencoded'
+			}
+			configInf['header']["content-type"]='application/x-www-form-urlencoded'
+		}*/
 		var config = this.fillRequestData(configInf);
 		if (!config || !(typeof processFunc == "function")) return;
+		uni.showLoading({
+			title: '加载中'
+		});
 		uni.request({
 			...config,
 			timeout: 30000,
@@ -139,8 +175,15 @@ var http = {
 					Toast('网络错误，数据获取失败' + config['url']);
 					return;
 				} else {
-					if(res.code == HTTP.FAIL){
-						Toast(res.message);
+					if(res.data.code == HTTP.FAIL){
+						if(res.data.message){
+							Toast(res.data.message);
+						}else{
+							Toast("网络异常!");
+						}
+						return;
+					}else if(res.data.code == HTTP.Unauthorized){
+						Toast(res.data.message);
 						return;
 					}
 					processFunc(res.data);
@@ -152,13 +195,95 @@ var http = {
 				console.log("requestStart error:", error, config['url']);
 				Toast('网络错误:' + config['url']);
 
+			},complete:(complete)=>{
+				uni.hideLoading();
 			}
 		})
+	},
+	DoLogin: async function(data,processFunc) {
+		let configInf = {};
+		configInf.method = "POST";
+		configInf.noToken = true;
+		//是数字说明是用userId来登录，token失效而已
+		if(typeof data == "number"){
+			configInf.data={userId:data};
+			configInf.url ="/user/doLoginUserId"
+			configInf.header={
+				'content-type':'application/x-www-form-urlencoded'
+			}
+		}else{
+			configInf.data=data;
+			configInf.url="/user/doLogin"
+		}
+
+		var config = this.fillRequestData(configInf);
+		if (!config ) return;
+		uni.showLoading({
+			title: '登录中'
+		});
+		var [error, res] = await uni.request({
+			...config,
+			timeout: 30000,
+			/*success: function(res) {
+				if (res.statusCode != 200) {
+					Toast('网络错误，数据获取失败' + config['url']);
+					return;
+				} else {
+					if(res.data.code == HTTP.FAIL){
+						if(res.data.message){
+							Toast(res.data.message);
+						}else{
+							Toast("网络异常!");
+						}
+						return;
+					}
+					DLStorage.setCacheStorage(DLStorage.keyDataSet.accessToken,res.data.data);
+					if(processFunc != undefined){
+						processFunc(res.data);
+					}
+				}
+				console.log("返回数据", res.data)
+			},
+			fail: (error) => {
+				uni.$emit("messagePrompEmit", "close", null);
+				console.log("requestStart error:", error, config['url']);
+				Toast('网络错误:' + config['url']);
+
+			},complete:(complete)=>{
+				uni.hideLoading();
+			}*/
+		});
+		if(error){
+			console.log("requestStart error:", error, config['url']);
+			Toast('网络错误:' + config['url']);
+		}
+		if(res){
+			if (res.statusCode != 200) {
+				Toast('网络错误，数据获取失败' + config['url']);
+				return;
+			} else {
+				if(res.data.code == HTTP.FAIL){
+					if(res.data.message){
+						Toast(res.data.message);
+					}else{
+						Toast("网络异常!");
+					}
+					return;
+				}
+				DLStorage.setCacheStorage(DLStorage.keyDataSet.accessToken,res.data.data);
+				if(processFunc != undefined){
+					processFunc(res.data);
+				}
+			}
+			console.log("返回Token数据", res.data)
+		}
+		uni.hideLoading();
 	}
 }
 var HTTP={
 	SUCCESS:0,
-	FAIL:999
+	FAIL:999,
+	Unauthorized:401
 }
 Vue.prototype.$HTTP = HTTP;
 export  {http,DLStorage,Toast,serverInfo};

@@ -83,7 +83,7 @@
 				});
 			},
 			mycourse: function() {
-				uni.reLaunch({
+				uni.switchTab({
 					url: "/pages/course/course"
 				})
 			},
@@ -93,7 +93,7 @@
 				})
 			},
 			topic: function() {
-				uni.reLaunch({
+				uni.switchTab({
 					url: "/pages/liveTopic/liveTopic"
 				})
 			},
